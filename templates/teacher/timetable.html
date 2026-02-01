@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}My Timetable - University Scheduler{% endblock %}
+
+{% block content %}
+<div class="container mt-2 container-fluid">
+    <h1 class="mb-4"><i class="fas fa-calendar"></i> My Timetable</h1>
+    
+    <!-- Timetable Grid -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 120px;">Time</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set times = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'] %}
+                {% for time in times %}
+                    <tr>
+                        <td class="fw-bold">{{ time }}</td>
+                        {% for day in range(5) %}
+                            <td style="height: 100px; vertical-align: top;">
+                                {% for slot in timetable[day] %}
+                                    {% if slot.start_time|string == time + ':00' %}
+                                        <div class="timetable-slot">
+                                            <small><strong>{{ slot.course.code }}</strong></small>
+                                            <br>
+                                            <small>{{ slot.room.name }}</small>
+                                            <br>
+                                            <small class="text-muted">{{ slot.start_time }} - {{ slot.end_time }}</small>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="text-end mt-3">
+        <a href="{{ url_for('teacher.export_timetable_pdf') }}" class="btn btn-primary"><i class="fas fa-download"></i> Exporter en PDF</a>
+        <a href="{{ url_for('teacher.export_timetable_excel') }}" class="btn btn-success"><i class="fas fa-file-excel"></i> Exporter vers Excel</a>
+    </div>
+</div>
+{% endblock %}

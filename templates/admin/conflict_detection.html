@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}Détection de Conflits - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-exclamation-triangle"></i> Conflits de Planification</h1>
+    
+    {% if conflicts %}
+        <div class="row">
+            {% for conflict in conflicts %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-danger shadow-sm">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-times-circle"></i> 
+                                Conflit Détecté
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="text-danger fw-bold">Raisons :</h6>
+                            <ul class="text-danger mb-3">
+                                {% for reason in conflict.reasons %}
+                                    <li>{{ reason }}</li>
+                                {% endfor %}
+                            </ul>
+
+                            <div class="row">
+                                <div class="col-md-6 border-end">
+                                    <h6 class="text-primary">Cours 1</h6>
+                                    <p><strong>Cours :</strong> {{ conflict.slot1.course.code }}</p>
+                                    <p><strong>Salle :</strong> {{ conflict.slot1.room.name }}</p>
+                                    <p><strong>Heure :</strong> {{ conflict.slot1.start_time }} - {{ conflict.slot1.end_time }}</p>
+                                    <p><strong>Jour :</strong> {{ ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][conflict.slot1.day_of_week] }}</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('admin.edit_timeslot', slot_id=conflict.slot1.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+                                        <form action="{{ url_for('admin.auto_resolve_conflict', slot_id=conflict.slot1.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                                                <i class="fas fa-magic"></i> Résoudre Automatiquement
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Cours 2</h6>
+                                    <p><strong>Cours :</strong> {{ conflict.slot2.course.code }}</p>
+                                    <p><strong>Salle :</strong> {{ conflict.slot2.room.name }}</p>
+                                    <p><strong>Heure :</strong> {{ conflict.slot2.start_time }} - {{ conflict.slot2.end_time }}</p>
+                                    <p><strong>Jour :</strong> {{ ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][conflict.slot2.day_of_week] }}</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('admin.edit_timeslot', slot_id=conflict.slot2.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+                                        <form action="{{ url_for('admin.auto_resolve_conflict', slot_id=conflict.slot2.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                                                <i class="fas fa-magic"></i> Résoudre Automatiquement
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="{{ url_for('admin.timetable_view') }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-table"></i> Voir l'Emploi du Temps Complet
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle"></i> Aucun conflit de planification détecté ! Tout semble correct.
+        </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Retour au Tableau de Bord
+        </a>
+    </div>
+</div>
+{% endblock %}

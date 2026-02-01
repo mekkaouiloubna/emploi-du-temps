@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block title %}Définir les Disponibilités - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-clock"></i> Disponibilités d'Enseignement</h1>
+    
+    <!-- Disponibilités Actuelles -->
+    {% if availabilities %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mon Planning</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Jour</th>
+                                <th>Disponible De</th>
+                                <th>Disponible Jusqu'à</th>
+                                <th>Statut</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for avail in availabilities %}
+                                <tr>
+                                    <td><strong>{{ days[avail.day_of_week] }}</strong></td>
+                                    <td>{{ avail.start_time }}</td>
+                                    <td>{{ avail.end_time }}</td>
+                                    <td>
+                                        {% if avail.is_available %}
+                                            <span class="badge bg-success">Disponible</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Indisponible</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('teacher.delete_availability', avail_id=avail.id) }}" id="avail-form-{{ avail.id }}" style="display: inline;">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteAvailability({{ avail.id }})">Supprimer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Ajouter une Disponibilité -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-plus"></i> Ajouter une Disponibilité</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form.day_of_week(class="form-select") }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.start_time(class="form-control", type="time") }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.end_time(class="form-control", type="time") }}
+                    </div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    {{ form.is_available(class="form-check-input") }}
+                    {{ form.is_available.label(class="form-check-label") }}
+                </div>
+                
+                {{ form.submit(class="btn btn-success") }}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

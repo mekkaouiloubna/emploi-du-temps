@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduFlow - Gestionnaire d'Emploi du Temps{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center text-decoration-none" href="/">
+                <div class="brand-logo me-2">
+                    <i class="fas fa-calendar-check text-white"></i>
+                </div>
+                <span class="brand-text">
+                    Edu<span style="font-weight: 800;">Flow</span>
+                </span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if current_user.is_authenticated %}
+                    {% if current_user.type == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+                            href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Tableau de Bord
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-calendar-alt me-1"></i> Emplois du Temps
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.view_timetable') }}">Vue Globale</a>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.generate_timetable') }}">Génération
+                                    Auto</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-warning" href="{{ url_for('admin.detect_conflicts') }}">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Vérifier Conflits
+                                </a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.list_users') }}">
+                            <i class="fas fa-users me-1"></i> Gérer Utilisateurs
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cubes me-1"></i> Ressources
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.courses') }}">Gérer les Cours</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.rooms') }}">Gérer les Salles</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.bookings') }}">Demandes de
+                                    Réservation</a></li>
+                            <li><a href=""></a></li>
+
+                        </ul>
+                    </li>
+
+                    {% elif current_user.type == 'teacher' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'teacher.dashboard' %}active{% endif %}"
+                            href="{{ url_for('teacher.dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Tableau de Bord
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'teacher.timetable' %}active{% endif %}"
+                            href="{{ url_for('teacher.timetable') }}">
+                            <i class="fas fa-calendar-day me-1"></i> Mon Emploi du Temps
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'teacher.bookings' %}active{% endif %}"
+                            href="{{ url_for('teacher.bookings') }}">
+                            <i class="fas fa-bookmark me-1"></i> Réserver Salle
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'teacher.availability' %}active{% endif %}"
+                            href="{{ url_for('teacher.availability') }}">
+                            <i class="fas fa-clock me-1"></i> Disponibilités
+                        </a>
+                    </li>
+
+                    {% elif current_user.type == 'student' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}"
+                            href="{{ url_for('student.dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Tableau de Bord
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'student.timetable' %}active{% endif %}"
+                            href="{{ url_for('student.timetable') }}">
+                            <i class="fas fa-calendar me-1"></i> Mon Emploi du Temps
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'student.available_rooms' %}active{% endif %}"
+                            href="{{ url_for('student.available_rooms') }}">
+                            <i class="fas fa-door-open me-1"></i> Trouver Salle Libre
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- User Menu -->
+                    <li class="nav-item dropdown ms-lg-2">
+                        <a class="nav-link user-dropdown-toggle d-flex align-items-center" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.first_name }}</span>
+                            <i class="fas fa-chevron-down ms-2 small"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li class="dropdown-header">
+                                Connecté en tant que<br>
+                                <strong class="text-dark">{{ current_user.email }}</strong>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="fas fa-user-cog me-2 text-primary"></i> Profil
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Déconnexion
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-light text-primary px-3 py-2 rounded-pill fw-bold"
+                            href="{{ url_for('auth.login') }}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Connexion
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container-fluid mt-3 px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+            role="alert">
+            {% if category == 'success' %}
+            <i class="fas fa-check-circle me-2"></i>
+            {% elif category == 'error' or category == 'danger' %}
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% else %}
+            <i class="fas fa-info-circle me-2"></i>
+            {% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-md-start">
+                    <p class="mb-0">&copy; 2024 EduFlow - Système de Gestion Universitaire. Tous droits réservés.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0 small">
+                        <i class="fas fa-graduation-cap me-1"></i> Optimisez votre temps d'enseignement
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

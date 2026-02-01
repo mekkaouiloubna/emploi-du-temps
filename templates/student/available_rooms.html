@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+
+{% block title %}Salles Disponibles - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-primary"> <i class="fas fa-door-open me-2"></i>Salles Disponibles</h1>
+    </div>
+
+    {% if rooms %}
+    <div class="row">
+        {% for room in rooms %}
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ room.name }}</h5>
+                    <p class="text-muted mb-3">{{ room.code }}</p>
+
+                    <div class="mb-3">
+                        <span class="badge bg-info">{{ room.room_type }}</span>
+                        <span class="badge bg-success">Disponible</span>
+                    </div>
+
+                    <div class="room-details">
+                        <p><i class="fas fa-users"></i> <strong>Capacité :</strong> {{ room.capacity }} places</p>
+                        <p><i class="fas fa-building"></i> <strong>Bâtiment :</strong> {{ room.building or 'Non
+                            spécifié' }}</p>
+                        <p><i class="fas fa-layer-group"></i> <strong>Étage :</strong> {% if room.floor %}{{ room.floor
+                            }}{% else %}Non spécifié{% endif %}</p>
+                    </div>
+
+                    {% if room.equipment %}
+                    <h6 class="mt-3">Équipement :</h6>
+                    <div class="mb-2">
+                        {% for equip in room.equipment %}
+                        <span class="badge bg-secondary">{{ equip.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Aucune salle disponible pour le moment.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}Réservations de Salles - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-bookmark"></i> Demandes de Réservation de Salle</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                <i class="fas fa-plus"></i> Nouvelle Demande de Réservation
+            </button>
+        </div>
+    </div>
+    
+    <!-- Table des Réservations -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cours</th>
+                                <th>Groupe</th>
+                                <th>Salle</th>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Raison</th>
+                                <th>Statut</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td>
+                                        {% if booking.course %}
+                                            {{ booking.course.code }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if booking.group %}
+                                            {{ booking.group.name }}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Tous/Aucun</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ booking.room.name }}</strong></td>
+                                    <td>{{ booking.requested_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ booking.start_time }} - {{ booking.end_time }}</td>
+                                    <td>{{ booking.reason[:50] }}...</td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                            <span class="badge bg-warning">En Attente</span>
+                                        {% elif booking.status == 'approved' %}
+                                            <span class="badge bg-success">Approuvé</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejeté</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                            <form method="POST" action="{{ url_for('teacher.cancel_booking', booking_id=booking.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Annuler cette réservation ?')">Annuler</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-4">Aucune demande de réservation pour le moment. Créez-en une pour commencer !</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Modal de Réservation -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Demander une Réservation de Salle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cours</label>
+                            {{ form.course_id(class="form-select") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Groupe (Optionnel)</label>
+                            {{ form.group_id(class="form-select") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Salle</label>
+                            {{ form.room_id(class="form-select") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            {{ form.requested_date(class="form-control", type="date") }}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Heure de Début</label>
+                                {{ form.start_time(class="form-control", type="time") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Heure de Fin</label>
+                                {{ form.end_time(class="form-control", type="time") }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Raison</label>
+                            {{ form.reason(class="form-control", rows="3", placeholder="Motif de la réservation") }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if show_modal %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        bookingModal.show();
+    });
+</script>
+{% endif %}
+{% endblock %}

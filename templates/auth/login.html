@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}Connexion - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h1 class="card-title text-center mb-4 text-primary">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </h1>
+                
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {% if form.email.errors %}
+                            {{ form.email(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.email(class="form-control", placeholder="Adresse Email") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if form.password.errors %}
+                            {{ form.password(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.password(class="form-control", placeholder="Mot de passe") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me(class="form-check-input") }}
+                        {{ form.remember_me.label(class="form-check-label") }}
+                    </div>
+                    
+                    {{ form.submit(class="btn btn-primary w-100 py-2 fw-bold") }}
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center mb-0">
+                    Nouvel utilisateur ? 
+                    <a href="{{ url_for('auth.register', type='student') }}" class="text-decoration-none">Inscription Étudiant</a>
+                    ou
+                    <a href="{{ url_for('auth.register', type='teacher') }}" class="text-decoration-none">Inscription Enseignant</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

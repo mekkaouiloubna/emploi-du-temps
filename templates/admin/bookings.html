@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block title %}Gestion des Réservations - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-calendar-check"></i> Gestion des Demandes de Réservation</h1>
+    
+    <!-- Filter -->
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.bookings', status='all') }}" class="btn btn-outline-primary {% if status_filter == 'all' %}active{% endif %}">
+                Toutes les Réservations
+            </a>
+            <a href="{{ url_for('admin.bookings', status='pending') }}" class="btn btn-outline-warning {% if status_filter == 'pending' %}active{% endif %}">
+                En Attente
+            </a>
+            <a href="{{ url_for('admin.bookings', status='approved') }}" class="btn btn-outline-success {% if status_filter == 'approved' %}active{% endif %}">
+                Approuvées
+            </a>
+            <a href="{{ url_for('admin.bookings', status='rejected') }}" class="btn btn-outline-danger {% if status_filter == 'rejected' %}active{% endif %}">
+                Rejetées
+            </a>
+        </div>
+    </div>
+    
+    <!-- Table des Réservations -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Enseignant</th>
+                                <th>Cours/Groupe</th>
+                                <th>Salle</th>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Raison</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td><strong>{{ booking.teacher.full_name }}</strong></td>
+                                    <td>
+                                        {% if booking.course %}
+                                            <div>{{ booking.course.code }}</div>
+                                            {% if booking.group %}
+                                                <small class="text-muted">{{ booking.group.name }}</small>
+                                            {% else %}
+                                                <small class="text-muted">Tous les Groupes</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ booking.room.name }}</td>
+                                    <td>{{ booking.requested_date.strftime('%d-%m-%Y') }}</td>
+                                    <td>{{ booking.start_time }} - {{ booking.end_time }}</td>
+                                    <td>{{ booking.reason[:40] }}...</td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                            <span class="badge bg-warning">En Attente</span>
+                                        {% elif booking.status == 'approved' %}
+                                            <span class="badge bg-success">Approuvé</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejeté</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                            <div class="d-inline-flex gap-1">
+                                                <form action="{{ url_for('admin.approve_booking', booking_id=booking.id) }}" method="POST" class="d-inline">
+                                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approuver cette réservation ?')">Approuver</button>
+                                                </form>
+                                                <form action="{{ url_for('admin.reject_booking', booking_id=booking.id) }}" method="POST" class="d-inline">
+                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Rejeter cette réservation ?')">Rejeter</button>
+                                                </form>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-4">Aucune demande de réservation trouvée</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

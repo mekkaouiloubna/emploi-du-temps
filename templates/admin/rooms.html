@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block title %}Gestion des Salles - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-door-open"></i> Gestion des Salles</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+                <i class="fas fa-plus"></i> Ajouter une Salle
+            </button>
+        </div>
+    </div>
+    
+    <!-- Rooms Grid -->
+    <div class="row">
+        {% if rooms.items %}
+            {% for room in rooms.items %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ room.name }}</h5>
+                            <p class="text-muted">{{ room.code }}</p>
+                            
+                            <div class="mb-3">
+                                <span class="badge bg-primary">{{ room.room_type }}</span>
+                                {% if room.is_available %}
+                                    <span class="badge bg-success">Disponible</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Indisponible</span>
+                                {% endif %}
+                            </div>
+                            
+                            <ul class="list-unstyled small">
+                                <li><strong>Bâtiment :</strong> {{ room.building or '-' }}</li>
+                                <li><strong>Étage :</strong> {{ room.floor or '-' }}</li>
+                                <li><strong>Capacité :</strong> {{ room.capacity }} places</li>
+                            </ul>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-info btn-sm text-white">Modifier</a>
+                                <form action="{{ url_for('admin.delete_room', room_id=room.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette salle ?');" class="d-grid">
+                                    <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <p class="text-muted text-center py-4">Aucune salle trouvée. Créez-en une pour commencer !</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if rooms.pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if rooms.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.rooms', page=rooms.prev_num) }}">Précédent</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in rooms.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == rooms.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.rooms', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if rooms.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.rooms', page=rooms.next_num) }}">Suivant</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+    
+    <!-- Add Room Modal -->
+    <div class="modal fade" id="addRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter une Salle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            {{ form.name(class="form-control", placeholder="Nom de la salle") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.code(class="form-control", placeholder="Code de la salle") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.building(class="form-control", placeholder="Bâtiment") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.floor(class="form-control", type="number", placeholder="Étage") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.capacity(class="form-control", type="number", placeholder="Capacité") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.room_type(class="form-select") }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

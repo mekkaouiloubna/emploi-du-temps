@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block title %}Modifier le Créneau - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-edit"></i> Modifier le Créneau</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Cours :</strong> {{ slot.course.code }} - {{ slot.course.name }}<br>
+                        <strong>Actuel :</strong> {{ ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][slot.day_of_week] }} 
+                        {{ slot.start_time }} - {{ slot.end_time }} en {{ slot.room.name }}
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.room_id.label(class="form-label") }}
+                            {{ form.room_id(class="form-select") }}
+                            {% if form.room_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.room_id.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.day_of_week.label(class="form-label") }}
+                            {{ form.day_of_week(class="form-select") }}
+                            {% if form.day_of_week.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.day_of_week.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.start_time.label(class="form-label") }}
+                                {{ form.start_time(class="form-control", type="time") }}
+                                {% if form.start_time.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.start_time.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.end_time.label(class="form-label") }}
+                                {{ form.end_time(class="form-control", type="time") }}
+                                {% if form.end_time.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.end_time.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('admin.detect_conflicts') }}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

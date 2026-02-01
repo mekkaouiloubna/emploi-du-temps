@@ -1,0 +1,279 @@
+{% extends "layout.html" %}
+
+{% block title %}Tableau de Bord Enseignant - Gestionnaire d'Emploi du Temps Universitaire{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Styles Spécifiques pour le Tableau de Bord Enseignant --- */
+    
+    /* Cartes de statistiques avec dégradés (Même style que l'Admin) */
+    .stat-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .stat-icon-bg {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5rem;
+        opacity: 0.15;
+        z-index: 0;
+        transform: rotate(-15deg);
+    }
+
+    /* Couleurs des dégradés */
+    .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
+    .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
+    .bg-gradient-info    { background: linear-gradient(45deg, #36b9cc, #258391); }
+    .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
+
+    /* Liste des cours modernes */
+    .course-item {
+        transition: background-color 0.2s;
+        border-left: 4px solid transparent;
+    }
+    .course-item:hover {
+        background-color: #f8f9fc;
+        border-left-color: #4e73df;
+    }
+
+    /* Actions Rapides (Gros boutons) */
+    .quick-action-card {
+        border: 1px solid #e3e6f0;
+        border-radius: 10px;
+        transition: all 0.2s;
+        text-align: center;
+        padding: 20px;
+        background: white;
+        height: 100%;
+        display: block;
+        text-decoration: none;
+        color: #5a5c69;
+    }
+    .quick-action-card:hover {
+        border-color: #4e73df;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(78, 115, 223, 0.1);
+        color: #4e73df;
+    }
+    .quick-action-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800 fw-bold">Tableau de Bord Enseignant</h1>
+            <p class="text-muted">Gérez votre emploi du temps et vos activités académiques</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-white text-dark border p-2 shadow-sm">
+                <i class="far fa-calendar-alt me-1 text-primary"></i> 
+                {{ now.strftime('%d %B %Y') if now else "Aujourd'hui" }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-5">
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Mes Cours</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.courses_count }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-book stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Prochains Cours</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.upcoming_slots }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chalkboard-user stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Demandes En Attente</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.pending_bookings }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-clock stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Notifications</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.unread_notifications }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-bell stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 bg-white border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-dark"><i class="fas fa-calendar-day me-2 text-success"></i>Prochains Cours</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if upcoming_slots %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Cours</th>
+                                    <th>Salle</th>
+                                    <th>Heure</th>
+                                    <th class="text-center">Type</th>
+                                    <th>Jour</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in upcoming_slots %}
+                                <tr class="course-item">
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ slot.course.name }}</div>
+                                        <div class="small text-muted">{{ slot.course.code }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="fas fa-door-open me-1"></i> {{ slot.room.code }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ slot.start_time.strftime('%H:%M') }}</div>
+                                        <div class="small text-muted">{{ slot.end_time.strftime('%H:%M') }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if slot.course.course_type.value == 'CM' %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary px-2">CM</span>
+                                        {% elif slot.course.course_type.value == 'TP' %}
+                                            <span class="badge bg-purple bg-opacity-10 text-purple px-2" style="color: #6f42c1; background-color: #e2d9f3;">TP</span>
+                                        {% else %}
+                                            <span class="badge bg-warning bg-opacity-10 text-warning px-2">TD</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+                                        <span class="small fw-bold">{{ days[slot.day_of_week] }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-coffee fa-3x mb-3 opacity-25"></i>
+                        <p class="mb-0">Aucun cours à venir programmé.</p>
+                        <small>Profitez de votre temps libre !</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-white border-bottom-0">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-bolt me-2 text-warning"></i>Actions Rapides</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a href="{{ url_for('teacher.bookings') }}" class="quick-action-card">
+                                <i class="fas fa-calendar-plus quick-action-icon text-primary"></i>
+                                <span class="fw-bold small d-block">Réserver une Salle</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('teacher.search_rooms') }}" class="quick-action-card">
+                                <i class="fas fa-search quick-action-icon text-info"></i>
+                                <span class="fw-bold small d-block">Trouver une Salle</span>
+                            </a>
+                        </div>
+                        <div class="col-12">
+                            <a href="{{ url_for('teacher.availability') }}" class="btn btn-outline-success w-100 py-2">
+                                <i class="fas fa-clock me-2"></i> Mettre à Jour Ma Disponibilité
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header py-3 bg-white border-bottom-0">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-book-open me-2 text-primary"></i>Mes Cours</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if courses %}
+                    <ul class="list-group list-group-flush">
+                        {% for course in courses %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-4 py-3 border-bottom-0">
+                            <div>
+                                <div class="fw-bold text-dark">{{ course.name }}</div>
+                                <div class="small text-muted">{{ course.code }}</div>
+                            </div>
+                            <span class="badge rounded-pill bg-light text-dark border">
+                                {{ course.course_type.value }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-4 text-center text-muted small">
+                        Aucun cours assigné pour le moment.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

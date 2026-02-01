@@ -1,0 +1,314 @@
+{% extends "layout.html" %}
+
+{% block title %}Tableau de Bord - Gestionnaire d'Emploi du Temps Universitaire{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Styles Spécifiques pour le Tableau de Bord (Dashboard Styles) --- */
+    
+    /* Cartes de statistiques avec dégradés */
+    .stat-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Icône d'arrière-plan semi-transparente */
+    .stat-icon-bg {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5rem;
+        opacity: 0.15;
+        z-index: 0;
+        transform: rotate(-15deg);
+    }
+
+    /* Couleurs des cartes */
+    .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
+    .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
+    .bg-gradient-info    { background: linear-gradient(45deg, #36b9cc, #258391); }
+    .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
+    .bg-gradient-danger  { background: linear-gradient(45deg, #e74a3b, #be2617); }
+
+    /* Section des actions rapides */
+    .action-btn {
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid #e3e6f0;
+        background: #fff;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #5a5c69;
+    }
+    
+    .action-btn:hover {
+        background-color: #f8f9fc;
+        border-color: #4e73df;
+        color: #4e73df;
+        text-decoration: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .action-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    /* Tableaux modernes */
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc;
+    }
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        background-color: #eaecf4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #4e73df;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-tachometer-alt me-2"></i>Tableau de Bord Administrateur
+            </h1>
+            <p class="text-muted mb-0">Vue d'ensemble des ressources et activités universitaires</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-white text-dark border p-2 shadow-sm">
+                <i class="far fa-clock me-1 text-primary"></i>
+                {{ now.strftime('%d %B %Y') if now else "Aujourd'hui" }}
+            </span>
+        </div>
+    </div>
+
+    {% if stats.pending_bookings > 0 %}
+    <div class="alert alert-warning border-start border-4 border-warning shadow-sm mb-4 fade show" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-bell fa-2x me-3 text-warning"></i>
+            <div>
+                <h5 class="alert-heading fw-bold mb-1">Actions Requises En Attente</h5>
+                <p class="mb-0">Vous avez <strong>{{ stats.pending_bookings }}</strong> nouvelles demandes de réservation de salle en attente d'approbation.</p>
+            </div>
+            <a href="#recent-bookings" class="btn btn-warning ms-auto text-dark fw-bold">Examiner Maintenant</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-5">
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Total Étudiants</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.total_students }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-user-graduate stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Enseignants Actifs</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.total_teachers }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chalkboard-teacher stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Cours Académiques</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.total_courses }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-book-open stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-gradient-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start position-relative z-1">
+                        <div>
+                            <div class="text-uppercase small fw-bold mb-1" style="opacity: 0.8;">Total Salles</div>
+                            <div class="h1 mb-0 fw-bold">{{ stats.total_rooms }}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-door-open stat-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow h-100" id="recent-bookings">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-bottom-0">
+                    <h5 class="m-0 fw-bold text-primary"><i class="fas fa-clock me-2"></i>Demandes de Réservation Récentes</h5>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.bookings') }}">Voir Tout</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Enseignant</th>
+                                    <th>Salle & Cours</th>
+                                    <th>Date & Heure</th>
+                                    <th class="text-center">Statut</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if stats.pending_bookings == 0 and not recent_bookings %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                                            <p class="mb-0">Aucune demande de réservation récente trouvée.</p>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    {% for booking in recent_bookings %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-3">
+                                                    {{ booking.teacher.first_name[0] }}{{ booking.teacher.last_name[0] }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-dark">{{ booking.teacher.first_name }} {{ booking.teacher.last_name }}</div>
+                                                    <div class="small text-muted">{{ booking.teacher.email }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">{{ booking.room.code }}</div>
+                                            <div class="small text-muted">{{ booking.course.code }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="text-dark">{{ booking.requested_date.strftime('%Y-%m-%d') }}</div>
+                                            <div class="small text-muted">{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if booking.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark rounded-pill px-3">En Attente</span>
+                                            {% elif booking.status == 'approved' %}
+                                                <span class="badge bg-success rounded-pill px-3">Approuvé</span>
+                                            {% else %}
+                                                <span class="badge bg-danger rounded-pill px-3">Rejeté</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            {% if booking.status == 'pending' %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <form action="{{ url_for('admin.approve_booking', booking_id=booking.id) }}" method="POST" class="d-inline">
+                                                        <button type="submit" class="btn btn-success" title="Approuver" onclick="return confirm('Approuver cette réservation ?')">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form action="{{ url_for('admin.reject_booking', booking_id=booking.id) }}" method="POST" class="d-inline ms-1">
+                                                        <button type="submit" class="btn btn-danger" title="Rejeter" onclick="return confirm('Rejeter cette réservation ?')">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small"><i class="fas fa-lock"></i></span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 bg-white border-bottom-0">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-rocket me-2 text-primary"></i>Actions Rapides</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 h-100">
+                        <div class="col-6">
+                            <a href="{{ url_for('admin.generate_timetable') }}" class="action-btn">
+                                <i class="fas fa-magic action-icon text-primary"></i>
+                                <span class="small fw-bold text-center">Générer l'Emploi du Temps</span>
+                            </a>
+                        </div>
+                        
+                        <div class="col-6">
+                            <a href="{{ url_for('admin.detect_conflicts') }}" class="action-btn">
+                                <i class="fas fa-exclamation-triangle action-icon text-warning"></i>
+                                <span class="small fw-bold text-center">Détection de Conflits</span>
+                            </a>
+                        </div>
+                        
+                        <div class="col-6">
+                            <a href="{{ url_for('admin.courses') }}" class="action-btn">
+                                <i class="fas fa-book-open action-icon text-success"></i>
+                                <span class="small fw-bold text-center">Gérer les Cours</span>
+                            </a>
+                        </div>
+                        
+                        <div class="col-6">
+                            <a href="{{ url_for('admin.rooms') }}" class="action-btn">
+                                <i class="fas fa-door-open action-icon text-info"></i>
+                                <span class="small fw-bold text-center">Gérer les Salles</span>
+                            </a>
+                        </div>
+                         <div class="col-6">
+                            <a href="{{ url_for('admin.list_users') }}" class="action-btn">
+                                <i class="fas fa-users action-icon text-info"></i>
+                                <span class="small fw-bold text-center">Gérer les Utilisateurs</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

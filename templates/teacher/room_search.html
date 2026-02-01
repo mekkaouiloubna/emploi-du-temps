@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block title %}Rechercher des Salles - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-search"></i> Trouver des Salles Disponibles</h1>
+    
+    <!-- Formulaire de Recherche -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                {{ form.hidden_tag() }}
+                
+                <div class="col-md-4">
+                    {{ form.required_capacity(class="form-control", placeholder="Capacité Minimale") }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.room_type(class="form-select") }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.submit(class="btn btn-primary w-100") }}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Résultats -->
+    {% if rooms %}
+        <h5 class="mb-3">{{ rooms|length }} Salle(s) trouvée(s)</h5>
+        <div class="row">
+            {% for room in rooms %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ room.name }}</h5>
+                            <p class="text-muted">{{ room.code }}</p>
+                            
+                            <div class="mb-3">
+                                <span class="badge bg-info">{{ room.room_type }}</span>
+                                <span class="badge bg-success">Disponible</span>
+                            </div>
+                            
+                            <ul class="list-unstyled">
+                                <li><strong>Capacité :</strong> {{ room.capacity }} places</li>
+                                <li><strong>Bâtiment :</strong> {{ room.building or '-' }}</li>
+                                <li><strong>Étage :</strong> {{ room.floor or '-' }}</li>
+                            </ul>
+                            
+                            <a href="{{ url_for('teacher.bookings', room_id=room.id) }}" class="btn btn-primary btn-sm w-100 mt-3">
+                                <i class="fas fa-calendar-check"></i> Réserver la Salle
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% elif form.is_submitted() %}
+        <div class="alert alert-warning">
+            <i class="fas fa-info-circle"></i> Aucune salle ne correspond à vos critères. Essayez d'ajuster vos filtres.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

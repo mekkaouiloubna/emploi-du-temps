@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block title %}Statistiques - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-chart-bar"></i> Statistiques du Système</h1>
+    
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ stats.total_students }}</h3>
+                    <p class="text-muted">Total Étudiants</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ stats.total_teachers }}</h3>
+                    <p class="text-muted">Total Enseignants</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ stats.total_courses }}</h3>
+                    <p class="text-muted">Total Cours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ stats.total_rooms }}</h3>
+                    <p class="text-muted">Total Salles</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Room Occupancy -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Occupation des Salles</h5>
+        </div>
+        <div class="card-body">
+            {% if stats.room_occupancy %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Salle</th>
+                                <th>Type</th>
+                                <th>Capacité</th>
+                                <th>Créneaux Occupés</th>
+                                <th>Taux d'Occupation</th>
+                                <th>Progression</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room_stat in stats.room_occupancy %}
+                                <tr>
+                                    <td><strong>{{ room_stat.room.name }}</strong></td>
+                                    <td>{{ room_stat.room.room_type }}</td>
+                                    <td>{{ room_stat.room.capacity }}</td>
+                                    <td>{{ room_stat.occupied_slots }}</td>
+                                    <td>{{ "%.1f"|format(room_stat.occupancy_rate) }}%</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            {% if room_stat.occupancy_rate > 80 %}
+                                                <div class="progress-bar bg-danger" style="width: {{ room_stat.occupancy_rate }}%"></div>
+                                            {% elif room_stat.occupancy_rate > 50 %}
+                                                <div class="progress-bar bg-warning" style="width: {{ room_stat.occupancy_rate }}%"></div>
+                                            {% else %}
+                                                <div class="progress-bar bg-success" style="width: {{ room_stat.occupancy_rate }}%"></div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Aucune donnée de salle disponible</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

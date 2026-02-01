@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Titre principal du rapport des conflits -->
+    <h2>
+        <i class="fas fa-exclamation-triangle text-warning"></i>
+        Rapport de Conflits
+    </h2>
+    
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <!-- Carte : total des conflits -->
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total des Conflits</h5>
+                    <h2>{{ stats.total_conflicts }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <!-- Carte : conflits critiques -->
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Conflits Critiques</h5>
+                    <h2>{{ stats.critical }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if conflicts %}
+        <!-- Tableau des conflits détectés -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Type de Conflit</th>
+                        <th>Gravité</th>
+                        <th>Description</th>
+                        <th>Cours 1</th>
+                        <th>Cours 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conflict in conflicts %}
+                    <tr>
+                        <td>
+                            <!-- Type de conflit -->
+                            {% if conflict.type == 'room_conflict' %}
+                                <span class="badge bg-danger">Conflit de Salle</span>
+                            {% elif conflict.type == 'teacher_conflict' %}
+                                <span class="badge bg-warning text-dark">Conflit d'Enseignant</span>
+                            {% else %}
+                                <span class="badge bg-info">Capacité de Salle</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <!-- Niveau de gravité -->
+                            {% if conflict.severity == 'critical' %}
+                                <span class="text-danger fw-bold">Critique</span>
+                            {% else %}
+                                <span class="text-warning fw-bold">Élevée</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Description du conflit -->
+                        <td>{{ conflict.description }}</td>
+
+                        <!-- Cours concernés -->
+                        <td>{{ conflict.slot1_course }}</td>
+                        <td>{{ conflict.slot2_course if conflict.slot2_course else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Message si aucun conflit n'est détecté -->
+        <div class="alert alert-success">
+            <h4>
+                <i class="fas fa-check-circle"></i>
+                Excellent !
+            </h4>
+            <p>Aucun conflit n'a été trouvé dans l'emploi du temps actuel.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

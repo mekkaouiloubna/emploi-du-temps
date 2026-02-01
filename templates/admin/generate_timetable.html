@@ -1,0 +1,198 @@
+{% extends "layout.html" %}
+
+{% block title %}Générer l'Emploi du Temps - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-calendar-plus"></i> Générer l'Emploi du Temps</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Paramètres de Génération</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.generate_timetable') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.semester.label(class="form-label fw-bold") }}
+                                    {{ form.semester(class="form-select") }}
+                                    {% if form.semester.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.semester.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    {{ form.department_id.label(class="form-label fw-bold") }}
+                                    {{ form.department_id(class="form-select") }}
+                                    {% if form.department_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.department_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    {{ form.group_id.label(class="form-label fw-bold") }}
+                                    {{ form.group_id(class="form-select") }}
+                                    {% if form.group_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.group_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Sélectionnez "Tous les Groupes" pour générer pour toute la filière.</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations de Génération</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Contraintes de Temps :</h6>
+                    <ul class="list-unstyled small">
+                        <li><strong>Heures :</strong> 8:00 - 18:00</li>
+                        <li><strong>Jours :</strong> Lundi - Vendredi</li>
+                        <li><strong>Durée :</strong> Basée sur les crédits du cours</li>
+                    </ul>
+                    
+                    <div class="alert alert-warning small">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Note :</strong> La génération peut prendre plusieurs minutes selon le nombre de cours et de contraintes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if generated_timetable %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Résultats de la Génération</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-success">{{ generated_timetable.generated }}</h3>
+                                    <p class="mb-0">Cours Planifiés</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-danger">{{ generated_timetable.failed }}</h3>
+                                    <p class="mb-0">Échecs de Planification</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('admin.view_timetable') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Voir l'Emploi du Temps Généré
+                                </a>
+                                <a href="{{ url_for('admin.detect_conflicts') }}" class="btn btn-outline-warning">
+                                    <i class="fas fa-search"></i> Vérifier les Conflits
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if generated_timetable.conflicts %}
+                    <div class="mt-3">
+                        <h6>Conflits Détectés :</h6>
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for conflict in generated_timetable.conflicts %}
+                                <li>{{ conflict.course.code }} - {{ conflict.reason }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deptSelect = document.getElementById('department_id');
+    const groupSelect = document.getElementById('group_id');
+    
+    // Utilisation de safe pour éviter l'échappement JSON
+    const deptGroups = {{ dept_groups|tojson|safe }};
+    
+    function updateGroups() {
+        const deptId = deptSelect.value;
+        const groups = deptGroups[deptId] || [];
+        const currentGroup = groupSelect.value;
+        
+        groupSelect.innerHTML = '';
+        
+        const allOption = document.createElement('option');
+        allOption.value = '0';
+        allOption.text = 'Tous les Groupes';
+        groupSelect.appendChild(allOption);
+        
+        groups.forEach(function(g) {
+            const option = document.createElement('option');
+            option.value = g.id;
+            option.text = g.name;
+            groupSelect.appendChild(option);
+        });
+
+        // Restaurer la sélection
+        let found = false;
+        for (let i = 0; i < groupSelect.options.length; i++) {
+            if (groupSelect.options[i].value === currentGroup) {
+                groupSelect.value = currentGroup;
+                found = true;
+                break;
+            }
+        }
+        if (!found) groupSelect.value = '0';
+    }
+
+    if(deptSelect && groupSelect) {
+        updateGroups();
+        deptSelect.addEventListener('change', updateGroups);
+    }
+});
+</script>
+{% endblock %}

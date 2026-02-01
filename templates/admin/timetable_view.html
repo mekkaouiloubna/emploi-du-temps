@@ -1,0 +1,224 @@
+{% extends "layout.html" %}
+
+{% block title %}Emploi du Temps Global - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Styles Spécifiques pour l'Emploi du Temps --- */
+    .timetable-table th {
+        text-align: center;
+        vertical-align: middle;
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        height: 50px;
+    }
+    
+    .timetable-table td {
+        vertical-align: top;
+        padding: 5px;
+        height: 120px; /* Hauteur minimale pour les cellules */
+        background-color: #fff;
+    }
+
+    /* Carte de la séance (Session Card) */
+    .session-card {
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 5px;
+        font-size: 0.85rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border-left: 4px solid #ccc; /* Couleur par défaut */
+        transition: transform 0.2s;
+        position: relative;
+    }
+
+    .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 10;
+    }
+
+    /* Couleurs par type de cours (Course Type Colors) */
+    .type-CM { /* Cours Magistral - Blue */
+        background-color: #e7f1ff;
+        border-left-color: #0d6efd;
+    }
+    .type-TD { /* Travaux Dirigés - Orange */
+        background-color: #fff3cd;
+        border-left-color: #ffc107;
+    }
+    .type-TP { /* Travaux Pratiques - Purple */
+        background-color: #f3e5f5; /* Light Purple */
+        border-left-color: #9c27b0;
+    }
+    .type-Exam { /* Examen - Red */
+        background-color: #f8d7da;
+        border-left-color: #dc3545;
+    }
+
+    /* Texte et Icônes */
+    .session-title {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 2px;
+        color: #2c3e50;
+    }
+    .session-detail {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 2px;
+        color: #555;
+    }
+    .teacher-name {
+        color: #2e7d32; /* Green for teachers */
+        font-weight: 600;
+    }
+    
+    /* Bouton d'édition flottant */
+    .edit-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        opacity: 0.5;
+        font-size: 0.8rem;
+        color: #555;
+    }
+    .session-card:hover .edit-btn {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold text-primary"><i class="fas fa-calendar-alt me-2"></i>Emploi du Temps Global</h2>
+            <p class="text-muted mb-0">Voir et gérer tous les emplois du temps académiques des départements</p>
+        </div>
+        <div class="btn-group shadow-sm">
+            <a href="{{ url_for('admin.generate_timetable') }}" class="btn btn-primary">
+                <i class="fas fa-magic me-1"></i> Générer Auto
+            </a>
+            <a href="{{ url_for('admin.detect_conflicts') }}" class="btn btn-warning text-dark">
+                <i class="fas fa-exclamation-triangle me-1"></i> Vérifier Conflits
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i> Exporter
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-menu-item dropdown-item" href="#"><i class="fas fa-file-pdf me-2 text-danger"></i>Exporter en PDF</a></li>
+                    <li><a class="dropdown-menu-item dropdown-item" href="#"><i class="fas fa-file-excel me-2 text-success"></i>Exporter en Excel</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" onclick="window.print()"><i class="fas fa-print me-2"></i>Imprimer</button></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    {% if timeslots %}
+    
+    {% for dept, dept_timeslots in timetable_data.items() %}
+    <div class="card shadow mb-5 border-0">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 text-dark">
+                <i class="fas fa-graduation-cap text-primary me-2"></i>
+                {{ dept.name }} <span class="badge bg-light text-dark border ms-2">{{ dept.code }}</span>
+            </h4>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered timetable-table mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 80px;"><i class="far fa-clock"></i> Heure</th>
+                            <th style="width: 18.4%;">Lundi</th>
+                            <th style="width: 18.4%;">Mardi</th>
+                            <th style="width: 18.4%;">Mercredi</th>
+                            <th style="width: 18.4%;">Jeudi</th>
+                            <th style="width: 18.4%;">Vendredi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hour in range(8, 18) %}
+                        <tr>
+                            <td class="text-center text-muted fw-bold align-middle bg-light">
+                                {{ "%02d"|format(hour) }}:00
+                            </td>
+                            
+                            {% for day in range(5) %}
+                            <td>
+                                {% for slot in dept_timeslots %}
+                                    {% if slot.day_of_week == day and slot.start_time.hour == hour %}
+                                        
+                                        <div class="session-card type-{{ slot.course.course_type.value if slot.course.course_type else 'CM' }}">
+                                            
+                                            <a href="{{ url_for('admin.edit_timeslot', slot_id=slot.id) }}" class="edit-btn" title="Modifier Séance">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+
+                                            <span class="session-title text-truncate" title="{{ slot.course.name }}">
+                                                {{ slot.course.code }}
+                                                <span class="badge rounded-pill bg-white text-dark border px-1 ms-1" style="font-size: 0.7em;">
+                                                    {{ slot.course.course_type.value }}
+                                                </span>
+                                            </span>
+                                            
+                                            <div class="session-detail teacher-name">
+                                                <i class="fas fa-user-tie" style="width: 15px;"></i>
+                                                {% if slot.teacher %}
+                                                    {{ slot.teacher.last_name }} {{ slot.teacher.first_name[0] }}.
+                                                {% else %}
+                                                    <span class="text-danger small">Aucun Enseignant</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="session-detail">
+                                                <i class="fas fa-door-open text-secondary" style="width: 15px;"></i>
+                                                {{ slot.room.code }}
+                                            </div>
+
+                                            {% if slot.group %}
+                                            <div class="session-detail">
+                                                <i class="fas fa-users text-info" style="width: 15px;"></i>
+                                                {{ slot.group.code }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% else %}
+    <div class="text-center py-5">
+        <div class="empty-state">
+            <div class="mb-4">
+                <span class="fa-stack fa-3x">
+                    <i class="fas fa-circle fa-stack-2x text-light"></i>
+                    <i class="fas fa-calendar-times fa-stack-1x text-secondary"></i>
+                </span>
+            </div>
+            <h3 class="text-secondary fw-bold">Aucun Emploi du Temps Généré</h3>
+            <p class="text-muted mb-4">L'emploi du temps académique est actuellement vide. Commencez par générer un nouvel emploi du temps basé sur les contraintes du département.</p>
+            <a href="{{ url_for('admin.generate_timetable') }}" class="btn btn-primary btn-lg px-4 shadow-sm">
+                <i class="fas fa-wand-magic-sparkles me-2"></i> Générer l'Emploi du Temps
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

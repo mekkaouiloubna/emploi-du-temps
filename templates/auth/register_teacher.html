@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}Inscription - Enseignant - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h1 class="card-title text-center mb-4 text-primary">
+                    <i class="fas fa-chalkboard-user"></i> Inscription Enseignant
+                </h1>
+                
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.first_name(class="form-control", placeholder="Prénom") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.last_name(class="form-control", placeholder="Nom") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.email(class="form-control", placeholder="Email") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.specialization(class="form-control", placeholder="Spécialisation") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.office_location(class="form-control", placeholder="Bureau") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.phone(class="form-control", placeholder="Téléphone") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.courses(class="form-select", multiple=true) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password(class="form-control", placeholder="Mot de passe") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password_confirm(class="form-control", placeholder="Confirmer le mot de passe") }}
+                    </div>
+                    
+                    {{ form.submit(class="btn btn-primary w-100 py-2 fw-bold") }}
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center mb-0">
+                    Vous avez déjà un compte ? <a href="{{ url_for('auth.login') }}" class="text-decoration-none">Connexion</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

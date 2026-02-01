@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block title %}My Timetable - University Scheduler{% endblock %}
+
+{% block content %}
+<div class="ml-3 mr-3 container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-calendar-alt me-2"></i>My Timetable
+            </h1>
+            <p class="text-muted mb-0">View your weekly schedule at a glance</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.export_timetable_pdf') }}" class="btn btn-outline-primary">
+                <i class="fas fa-file-pdf me-2"></i>Export PDF
+            </a>
+            <a href="{{ url_for('student.export_timetable_excel') }}" class="btn btn-outline-success">
+                <i class="fas fa-file-excel me-2"></i>Export Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center py-3" style="width: 120px; background-color: #f8f9fa;">
+                                <span class="fw-semibold text-secondary">Time</span>
+                            </th>
+                            {% for day in days %}
+                            <th class="text-center py-3" style="background-color: #f8f9fa;">
+                                <span class="fw-bold text-dark">{{ day }}</span>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set times = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00',
+                        '17:00'] %}
+                        {% for time in times %}
+                        <tr>
+                            <td class="text-center fw-bold py-3" style="background-color: #f8f9fa;">
+                                {{ time }}
+                            </td>
+                            {% for day in range(7) %}
+                            <td style="height: 100px; min-width: 150px; vertical-align: top;"
+                                class="position-relative p-2 border-end {% if loop.last %}border-end-0{% endif %}">
+                                {% for slot in timetable[day] %}
+                                {% if slot.start_time|string == time + ':00' %}
+                                <div class="timetable-slot rounded p-2 h-100 d-flex flex-column justify-content-between"
+                                    style="background-color: #e8f4fd; border-left: 4px solid #0d6efd;">
+                                    <div>
+                                        <span class="badge bg-primary mb-1">{{ slot.course.code }}</span>
+                                        <p class="mb-1 small fw-semibold">{{ slot.course.name|truncate(20) }}</p>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <p class="mb-1 small">
+                                            <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                            {{ slot.room.name }}
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M')}}
+                                        </p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-2"
+                        style="width: 20px; height: 20px; border-left: 4px solid #0d6efd; background-color: #e8f4fd;">
+                    </div>
+                    <span class="small text-muted">Lecture Session</span>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="me-2"
+                        style="width: 20px; height: 20px; border: 1px solid #dee2e6; background-color: #f8f9fa;"></div>
+                    <span class="small text-muted">Available Slot</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <p class="text-muted small mb-0">
+                <i class="fas fa-info-circle me-1"></i>
+                Hover over sessions for details • Click export buttons to download
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timetable-slot {
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .timetable-slot:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        background-color: #d1e7ff !important;
+    }
+
+    .table th {
+        border-top: 1px solid #dee2e6;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .table td {
+        border-color: #eaeaea;
+    }
+</style>
+{% endblock %}

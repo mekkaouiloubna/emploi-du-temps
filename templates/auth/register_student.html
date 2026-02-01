@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+
+{% block title %}Inscription - Étudiant - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h1 class="card-title text-center mb-4 text-primary">
+                    <i class="fas fa-user-plus"></i> Inscription Étudiant
+                </h1>
+                
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {% if form.first_name.errors %}
+                                {{ form.first_name(class="form-control is-invalid", placeholder="Prénom") }}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.first_name(class="form-control", placeholder="Prénom") }}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {% if form.last_name.errors %}
+                                {{ form.last_name(class="form-control is-invalid", placeholder="Nom") }}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.last_name(class="form-control", placeholder="Nom") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if form.email.errors %}
+                            {{ form.email(class="form-control is-invalid", placeholder="Email") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.email(class="form-control", placeholder="Email") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.department_id(class="form-select", id="department_select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.group_id(class="form-select", id="group_select") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {% if form.student_id.errors %}
+                            {{ form.student_id(class="form-control is-invalid", placeholder="Numéro Étudiant") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.student_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.student_id(class="form-control", placeholder="Numéro Étudiant") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.enrollment_year(class="form-control", placeholder="Année d'inscription") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if form.password.errors %}
+                            {{ form.password(class="form-control is-invalid", placeholder="Mot de passe") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.password(class="form-control", placeholder="Mot de passe") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if form.password_confirm.errors %}
+                            {{ form.password_confirm(class="form-control is-invalid", placeholder="Confirmer le mot de passe") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password_confirm.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.password_confirm(class="form-control", placeholder="Confirmer le mot de passe") }}
+                        {% endif %}
+                    </div>
+                    
+                    {{ form.submit(class="btn btn-primary w-100 py-2 fw-bold") }}
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center mb-0">
+                    Vous avez déjà un compte ? <a href="{{ url_for('auth.login') }}" class="text-decoration-none">Connexion</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

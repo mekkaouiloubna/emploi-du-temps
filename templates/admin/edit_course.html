@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block title %}Modifier le Cours - Gestionnaire d'Emploi du Temps{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Modifier le Cours: {{ course.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", placeholder="Nom du Cours") }}
+                                {% for error in form.name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control", placeholder="Code du Cours") }}
+                                {% for error in form.code.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.course_type.label(class="form-label") }}
+                                {{ form.course_type(class="form-select") }}
+                                {% for error in form.course_type.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.duration_minutes.label(class="form-label") }}
+                                {{ form.duration_minutes(class="form-control", placeholder="Durée (minutes)") }}
+                                {% for error in form.duration_minutes.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                {{ form.credits.label(class="form-label") }}
+                                {{ form.credits(class="form-control", placeholder="Crédits") }}
+                                {% for error in form.credits.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.teachers.label(class="form-label") }}
+                            {{ form.teachers(class="form-select", size="5") }}
+                            <div class="form-text text-muted">Maintenez Ctrl/Cmd pour sélectionner plusieurs enseignants</div>
+                            {% for error in form.teachers.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3", placeholder="Description") }}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">Annuler</a>
+                            {{ form.submit(class="btn btn-primary", value="Enregistrer") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
