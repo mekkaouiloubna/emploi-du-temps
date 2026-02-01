@@ -60,7 +60,7 @@ def dashboard():
 @role_required(Admin)
 def courses():
     """
-    Liste et création des cours.
+    Liste et création des cours avec filtrage.
     Gère l'affichage paginé et le formulaire d'ajout.
     """
     form = CreateCourseForm()
@@ -93,9 +93,42 @@ def courses():
         flash(f'Cours "{course.name}" créé avec succès', 'success')
         return redirect(url_for('admin.courses'))
     
+    # Récupération des paramètres de filtrage
+    course_type_filter = request.args.get('course_type', 'all')
+    search_query = request.args.get('search', '').strip()
     page = request.args.get('page', 1, type=int)
-    courses = Course.query.paginate(page=page, per_page=20)
-    return render_template('admin/courses.html', form=form, courses=courses)
+    
+    # Construction de la requête avec filtres
+    query = Course.query
+    
+    # Filtre par type de cours
+    if course_type_filter != 'all':
+        course_type_map = {
+            'CM': CourseType.LECTURE,
+            'TD': CourseType.TUTORIAL,
+            'TP': CourseType.LAB,
+            'Exam': CourseType.EXAM,
+            'Autre': CourseType.OTHER
+        }
+        if course_type_filter in course_type_map:
+            query = query.filter(Course.course_type == course_type_map[course_type_filter])
+    
+    # Filtre par recherche (nom ou code)
+    if search_query:
+        query = query.filter(
+            db.or_(
+                Course.name.ilike(f'%{search_query}%'),
+                Course.code.ilike(f'%{search_query}%')
+            )
+        )
+    
+    courses = query.paginate(page=page, per_page=20)
+    
+    return render_template('admin/courses.html', 
+                         form=form, 
+                         courses=courses,
+                         current_type_filter=course_type_filter,
+                         current_search=search_query)
 
 @admin_bp.route('/courses/<int:course_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -168,7 +201,7 @@ def delete_course(course_id):
 @role_required(Admin)
 def rooms():
     """
-    Gestion des salles de cours (Liste et Ajout).
+    Gestion des salles de cours (Liste et Ajout) avec filtrage.
     """
     form = CreateRoomForm()
     if form.validate_on_submit():
@@ -185,9 +218,46 @@ def rooms():
         flash(f'Salle "{room.name}" créée', 'success')
         return redirect(url_for('admin.rooms'))
     
+    # Récupération des paramètres de filtrage
+    room_type_filter = request.args.get('room_type', 'all')
+    building_filter = request.args.get('building', 'all')
+    min_capacity = request.args.get('min_capacity', type=int) or None
+    max_capacity = request.args.get('max_capacity', type=int) or None
     page = request.args.get('page', 1, type=int)
-    rooms = Room.query.paginate(page=page, per_page=20)
-    return render_template('admin/rooms.html', form=form, rooms=rooms)
+    
+    # Construction de la requête avec filtres
+    query = Room.query
+    
+    # Filtre par type de salle
+    if room_type_filter != 'all':
+        query = query.filter(Room.room_type == room_type_filter)
+    
+    # Filtre par bâtiment
+    if building_filter != 'all':
+        query = query.filter(Room.building == building_filter)
+    
+    # Filtre par capacité minimale
+    if min_capacity:
+        query = query.filter(Room.capacity >= min_capacity)
+    
+    # Filtre par capacité maximale
+    if max_capacity:
+        query = query.filter(Room.capacity <= max_capacity)
+    
+    rooms = query.paginate(page=page, per_page=20)
+    
+    # Récupération des bâtiments uniques pour le filtre
+    buildings = db.session.query(Room.building).distinct().filter(Room.building.isnot(None)).all()
+    buildings = [b[0] for b in buildings]
+    
+    return render_template('admin/rooms.html', 
+                         form=form, 
+                         rooms=rooms,
+                         current_type_filter=room_type_filter,
+                         current_building_filter=building_filter,
+                         current_min_capacity=min_capacity,
+                         current_max_capacity=max_capacity,
+                         buildings=buildings)
 
 @admin_bp.route('/rooms/<int:room_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -296,20 +366,184 @@ def generate_timetable():
 @role_required(Admin)
 def view_timetable():
     """
-    Visualisation globale de l'emploi du temps.
-    Affiche les créneaux par département.
+    Visualisation globale de l'emploi du temps avec filtrage avancé par dropdowns.
     """
-    departments = Department.query.all()
-    timetable_data = {}
-    all_slots = TimeSlot.query.all()
+    # Récupération des paramètres de filtrage
+    semester_filter = request.args.get('semester', 'all')
+    department_filter = request.args.get('department', 'all')
+    course_type_filter = request.args.get('course_type', 'all')
+    teacher_filter = request.args.get('teacher', 'all')
+    room_type_filter = request.args.get('room_type', 'all')
+    sort_by = request.args.get('sort_by', 'day')
+    sort_order = request.args.get('sort_order', 'asc')
     
-    for dept in departments:
-        # Récupération des créneaux pour ce département via les groupes
-        slots = TimeSlot.query.join(Group).filter(Group.department_id == dept.id).all()
+    # Récupération de tous les départements et enseignants pour les dropdowns
+    all_departments = Department.query.all()
+    all_teachers = Teacher.query.order_by(Teacher.last_name, Teacher.first_name).all()
+    
+    # Construction de la requête de base
+    base_query = TimeSlot.query.join(Group).join(Course).join(Room).outerjoin(Teacher, TimeSlot.teacher_id == Teacher.id)
+    
+    # Application du filtre de semestre
+    if semester_filter != 'all':
+        try:
+            semester_value = int(semester_filter)
+            base_query = base_query.filter(Group.semester == semester_value)
+        except ValueError:
+            pass
+    
+    # Application du filtre de département
+    if department_filter != 'all':
+        try:
+            department_value = int(department_filter)
+            base_query = base_query.filter(Group.department_id == department_value)
+        except ValueError:
+            pass
+    
+    # Application du filtre de type de cours
+    if course_type_filter != 'all':
+        course_type_map = {
+            'CM': CourseType.LECTURE,
+            'TD': CourseType.TUTORIAL,
+            'TP': CourseType.LAB,
+            'Exam': CourseType.EXAM
+        }
+        if course_type_filter in course_type_map:
+            base_query = base_query.filter(Course.course_type == course_type_map[course_type_filter])
+    
+    # Application du filtre par enseignant
+    if teacher_filter != 'all':
+        try:
+            teacher_value = int(teacher_filter)
+            base_query = base_query.filter(TimeSlot.teacher_id == teacher_value)
+        except ValueError:
+            pass
+    
+    # Application du filtre par type de salle
+    if room_type_filter != 'all':
+        base_query = base_query.filter(Room.room_type == room_type_filter)
+    
+    # Application du tri
+    if sort_by == 'day':
+        sort_column = TimeSlot.day_of_week
+    elif sort_by == 'time':
+        sort_column = TimeSlot.start_time
+    elif sort_by == 'course':
+        sort_column = Course.name
+    elif sort_by == 'teacher':
+        sort_column = Teacher.last_name
+    else:
+        sort_column = TimeSlot.day_of_week
+    
+    if sort_order == 'asc':
+        base_query = base_query.order_by(sort_column.asc())
+    else:
+        base_query = base_query.order_by(sort_column.desc())
+    
+    # Récupération des créneaux filtrés
+    all_slots = base_query.all()
+    
+    # Organisation des créneaux par département
+    timetable_data = {}
+    departments_to_show = all_departments
+    if department_filter != 'all':
+        try:
+            department_value = int(department_filter)
+            departments_to_show = [dept for dept in all_departments if dept.id == department_value]
+        except ValueError:
+            pass
+    
+    for dept in departments_to_show:
+        # Construction de la requête pour chaque département
+        query = TimeSlot.query.join(Group).join(Course).join(Room).outerjoin(Teacher, TimeSlot.teacher_id == Teacher.id)
+        query = query.filter(Group.department_id == dept.id)
+        
+        # Application des mêmes filtres
+        if semester_filter != 'all':
+            try:
+                semester_value = int(semester_filter)
+                query = query.filter(Group.semester == semester_value)
+            except ValueError:
+                pass
+        
+        if course_type_filter != 'all':
+            course_type_map = {
+                'CM': CourseType.LECTURE,
+                'TD': CourseType.TUTORIAL,
+                'TP': CourseType.LAB,
+                'Exam': CourseType.EXAM
+            }
+            if course_type_filter in course_type_map:
+                query = query.filter(Course.course_type == course_type_map[course_type_filter])
+        
+        if teacher_filter != 'all':
+            try:
+                teacher_value = int(teacher_filter)
+                query = query.filter(TimeSlot.teacher_id == teacher_value)
+            except ValueError:
+                pass
+        
+        if room_type_filter != 'all':
+            query = query.filter(Room.room_type == room_type_filter)
+        
+        # Application du tri
+        if sort_by == 'day':
+            sort_column = TimeSlot.day_of_week
+        elif sort_by == 'time':
+            sort_column = TimeSlot.start_time
+        elif sort_by == 'course':
+            sort_column = Course.name
+        elif sort_by == 'teacher':
+            sort_column = Teacher.last_name
+        else:
+            sort_column = TimeSlot.day_of_week
+        
+        if sort_order == 'asc':
+            query = query.order_by(sort_column.asc())
+        else:
+            query = query.order_by(sort_column.desc())
+        
+        slots = query.all()
         if slots:
             timetable_data[dept] = slots
+    
+    # Récupération des semestres disponibles
+    available_semesters = db.session.query(Group.semester).distinct().filter(
+        Group.semester.isnot(None)
+    ).order_by(Group.semester).all()
+    available_semesters = [s[0] for s in available_semesters if s[0]]
+    
+    # Récupération des types de salles disponibles
+    available_room_types = db.session.query(Room.room_type).distinct().filter(
+        Room.room_type.isnot(None)
+    ).all()
+    available_room_types = [rt[0] for rt in available_room_types if rt[0]]
+    
+    # Calcul des statistiques
+    total_slots = len(all_slots)
+    stats = {
+        'total': total_slots,
+        'cm': len([s for s in all_slots if s.course.course_type == CourseType.LECTURE]),
+        'td': len([s for s in all_slots if s.course.course_type == CourseType.TUTORIAL]),
+        'tp': len([s for s in all_slots if s.course.course_type == CourseType.LAB]),
+        'exam': len([s for s in all_slots if s.course.course_type == CourseType.EXAM])
+    }
             
-    return render_template('admin/timetable_view.html', timetable_data=timetable_data, timeslots=all_slots)
+    return render_template('admin/timetable_view.html', 
+                         timetable_data=timetable_data, 
+                         timeslots=all_slots,
+                         current_semester=semester_filter,
+                         current_department=department_filter,
+                         current_course_type=course_type_filter,
+                         current_teacher=teacher_filter,
+                         current_room_type=room_type_filter,
+                         current_sort_by=sort_by,
+                         current_sort_order=sort_order,
+                         available_semesters=available_semesters,
+                         available_room_types=available_room_types,
+                         all_departments=all_departments,
+                         all_teachers=all_teachers,
+                         stats=stats)
 
 @admin_bp.route('/conflicts')
 @login_required
@@ -494,9 +728,82 @@ def export_timetable_excel():
 @login_required
 @role_required(Admin)
 def list_users():
-    """Liste de tous les utilisateurs du système."""
-    users = User.query.all() 
-    return render_template('admin/users.html', users=users)
+    """Liste de tous les utilisateurs du système avec filtrage avancé."""
+    # Récupération des paramètres de filtrage
+    user_type = request.args.get('user_type', 'all')
+    status_filter = request.args.get('status', 'all')
+    search_query = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'created_at')
+    sort_order = request.args.get('sort_order', 'desc')
+    page = request.args.get('page', 1, type=int)
+    per_page = 15
+    
+    # Construction de la requête de base
+    query = User.query
+    
+    # Filtre par type d'utilisateur
+    if user_type == 'admin':
+        query = query.filter(User.type == 'admin')
+    elif user_type == 'teacher':
+        query = query.filter(User.type == 'teacher')
+    elif user_type == 'student':
+        query = query.filter(User.type == 'student')
+    # Si 'all', on garde tous les utilisateurs
+    
+    # Filtre par statut (actif/inactif)
+    if status_filter == 'active':
+        query = query.filter(User.is_active == True)
+    elif status_filter == 'inactive':
+        query = query.filter(User.is_active == False)
+    
+    # Recherche textuelle (nom, prénom, email)
+    if search_query:
+        search_pattern = f'%{search_query}%'
+        query = query.filter(
+            db.or_(
+                User.first_name.ilike(search_pattern),
+                User.last_name.ilike(search_pattern),
+                User.email.ilike(search_pattern)
+            )
+        )
+    
+    # Tri dynamique
+    if sort_by == 'name':
+        sort_column = User.first_name
+    elif sort_by == 'email':
+        sort_column = User.email
+    elif sort_by == 'type':
+        sort_column = User.type
+    else:  # 'created_at' par défaut
+        sort_column = User.created_at
+    
+    if sort_order == 'asc':
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+    
+    # Pagination
+    users_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Calcul des statistiques pour l'affichage
+    stats = {
+        'total': User.query.count(),
+        'admins': User.query.filter(User.type == 'admin').count(),
+        'teachers': User.query.filter(User.type == 'teacher').count(),
+        'students': User.query.filter(User.type == 'student').count(),
+        'active': User.query.filter(User.is_active == True).count(),
+        'inactive': User.query.filter(User.is_active == False).count()
+    }
+    
+    return render_template('admin/users.html', 
+                         users=users_paginated.items,
+                         pagination=users_paginated,
+                         current_filter=user_type,
+                         current_status=status_filter,
+                         current_search=search_query,
+                         current_sort_by=sort_by,
+                         current_sort_order=sort_order,
+                         stats=stats)
 
 @admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
@@ -524,3 +831,27 @@ def delete_user(user_id):
         flash(f"Erreur lors de la suppression: {str(e)}", "danger")
 
     return redirect(url_for('admin.list_users'))
+
+@admin_bp.route('/timeslot/<int:slot_id>/delete', methods=['POST'])
+@login_required
+@role_required(Admin)
+def delete_timeslot(slot_id):
+    """
+    Suppression d'un créneau horaire de l'emploi du temps.
+    Permet de supprimer des séances individuelles du planning global.
+    """
+    slot = TimeSlot.query.get_or_404(slot_id)
+    
+    try:
+        # Sauvegarde des informations pour le message de confirmation
+        course_name = slot.course.name if slot.course else "Cours inconnu"
+        group_name = slot.group.name if slot.group else "Groupe inconnu"
+        
+        db.session.delete(slot)
+        db.session.commit()
+        flash(f'Créneau "{course_name}" pour {group_name} supprimé avec succès.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la suppression du créneau: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.view_timetable'))

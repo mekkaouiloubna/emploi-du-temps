@@ -5,36 +5,170 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 fw-bold text-primary"> <i class="fas fa-door-open me-2"></i>Salles Disponibles</h1>
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-door-open me-2"></i>Salles Disponibles
+            </h1>
+            <p class="text-muted mb-0">Trouvez une salle libre pour étudier</p>
+        </div>
     </div>
 
+    <!-- Statistiques simplifiées -->
+    <div class="mb-3">
+        <div class="text-muted small">
+            <strong>Salles affichées:</strong> {{ stats.total }} | 
+            <strong>Total disponibles:</strong> {{ stats.total_available }}
+        </div>
+    </div>
+
+    <!-- Section de filtrage -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('student.available_rooms') }}" id="filterForm">
+                <div class="row g-3 mb-3">
+                    <!-- Recherche textuelle -->
+                    <div class="col-md-3">
+                        <label for="searchInput" class="form-label fw-semibold">
+                            <i class="fas fa-search me-1"></i>Rechercher
+                        </label>
+                        <input type="text" class="form-control" id="searchInput" name="search" 
+                               placeholder="Nom ou code de salle..." 
+                               value="{{ current_search if current_search else '' }}">
+                    </div>
+
+                    <!-- Filtre par type -->
+                    <div class="col-md-2">
+                        <label for="roomTypeFilter" class="form-label fw-semibold">
+                            <i class="fas fa-filter me-1"></i>Type de salle
+                        </label>
+                        <select class="form-select" id="roomTypeFilter" name="room_type">
+                            <option value="all" {% if not current_type_filter or current_type_filter == 'all' %}selected{% endif %}>Tous</option>
+                            {% for room_type in room_types %}
+                            <option value="{{ room_type }}" {% if current_type_filter == room_type %}selected{% endif %}>{{ room_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Filtre par bâtiment -->
+                    <div class="col-md-2">
+                        <label for="buildingFilter" class="form-label fw-semibold">
+                            <i class="fas fa-building me-1"></i>Bâtiment
+                        </label>
+                        <select class="form-select" id="buildingFilter" name="building">
+                            <option value="all" {% if not current_building_filter or current_building_filter == 'all' %}selected{% endif %}>Tous</option>
+                            {% for building in buildings %}
+                            <option value="{{ building }}" {% if current_building_filter == building %}selected{% endif %}>{{ building }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Filtre par capacité -->
+                    <div class="col-md-2">
+                        <label for="minCapacity" class="form-label fw-semibold">
+                            <i class="fas fa-users me-1"></i>Capacité min.
+                        </label>
+                        <input type="number" class="form-control" id="minCapacity" name="min_capacity" 
+                               placeholder="Ex: 20" min="1"
+                               value="{{ current_min_capacity if current_min_capacity else '' }}">
+                    </div>
+
+                    <!-- Tri -->
+                    <div class="col-md-3">
+                        <label for="sortBy" class="form-label fw-semibold">
+                            <i class="fas fa-sort me-1"></i>Trier par
+                        </label>
+                        <div class="input-group">
+                            <select class="form-select" id="sortBy" name="sort_by">
+                                <option value="name" {% if current_sort_by == 'name' %}selected{% endif %}>Nom</option>
+                                <option value="capacity" {% if current_sort_by == 'capacity' %}selected{% endif %}>Capacité</option>
+                                <option value="building" {% if current_sort_by == 'building' %}selected{% endif %}>Bâtiment</option>
+                                <option value="type" {% if current_sort_by == 'type' %}selected{% endif %}>Type</option>
+                            </select>
+                            <select class="form-select" id="sortOrder" name="sort_order" style="max-width: 100px;">
+                                <option value="asc" {% if current_sort_order == 'asc' %}selected{% endif %}>↑</option>
+                                <option value="desc" {% if current_sort_order == 'desc' %}selected{% endif %}>↓</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-filter me-1"></i>Appliquer les filtres
+                        </button>
+                        <a href="{{ url_for('student.available_rooms') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-redo me-1"></i>Réinitialiser
+                        </a>
+                    </div>
+                    <div class="text-muted small">
+                        {% if current_type_filter and current_type_filter != 'all' %}
+                            <span class="badge bg-primary ms-1">Type: {{ current_type_filter }}</span>
+                        {% endif %}
+                        {% if current_building_filter and current_building_filter != 'all' %}
+                            <span class="badge bg-info ms-1">Bâtiment: {{ current_building_filter }}</span>
+                        {% endif %}
+                        {% if current_min_capacity %}
+                            <span class="badge bg-success ms-1">Capacité ≥ {{ current_min_capacity }}</span>
+                        {% endif %}
+                        {% if current_search %}
+                            <span class="badge bg-warning ms-1">Recherche: "{{ current_search }}"</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des salles -->
     {% if rooms %}
     <div class="row">
         {% for room in rooms %}
         <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 border-0">
                 <div class="card-body">
-                    <h5 class="card-title">{{ room.name }}</h5>
-                    <p class="text-muted mb-3">{{ room.code }}</p>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ room.name }}</h5>
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Disponible
+                        </span>
+                    </div>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-tag me-1"></i>{{ room.code }}
+                    </p>
 
                     <div class="mb-3">
-                        <span class="badge bg-info">{{ room.room_type }}</span>
-                        <span class="badge bg-success">Disponible</span>
+                        <span class="badge bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-door-open me-1"></i>{{ room.room_type }}
+                        </span>
                     </div>
 
                     <div class="room-details">
-                        <p><i class="fas fa-users"></i> <strong>Capacité :</strong> {{ room.capacity }} places</p>
-                        <p><i class="fas fa-building"></i> <strong>Bâtiment :</strong> {{ room.building or 'Non
-                            spécifié' }}</p>
-                        <p><i class="fas fa-layer-group"></i> <strong>Étage :</strong> {% if room.floor %}{{ room.floor
-                            }}{% else %}Non spécifié{% endif %}</p>
+                        <p class="mb-2">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <strong>Capacité:</strong> {{ room.capacity }} places
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-building text-secondary me-2"></i>
+                            <strong>Bâtiment:</strong> {{ room.building or 'Non spécifié' }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-layer-group text-info me-2"></i>
+                            <strong>Étage:</strong> {% if room.floor %}{{ room.floor }}{% else %}Non spécifié{% endif %}
+                        </p>
                     </div>
 
                     {% if room.equipment %}
-                    <h6 class="mt-3">Équipement :</h6>
-                    <div class="mb-2">
+                    <hr class="my-3">
+                    <h6 class="mb-2">
+                        <i class="fas fa-tools me-1"></i>Équipement:
+                    </h6>
+                    <div class="d-flex flex-wrap gap-1">
                         {% for equip in room.equipment %}
-                        <span class="badge bg-secondary">{{ equip.name }}</span>
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                            {{ equip.name }}
+                        </span>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -44,9 +178,41 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> Aucune salle disponible pour le moment.
+    <div class="text-center py-5">
+        <div class="mb-3">
+            <i class="fas fa-door-closed fa-3x text-muted"></i>
+        </div>
+        <h5 class="text-muted">Aucune salle trouvée</h5>
+        <p class="text-muted">Essayez de modifier vos critères de recherche</p>
+        <a href="{{ url_for('student.available_rooms') }}" class="btn btn-outline-primary">
+            <i class="fas fa-redo me-1"></i>Réinitialiser les filtres
+        </a>
     </div>
     {% endif %}
 </div>
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+    }
+
+    .room-details p {
+        font-size: 0.9rem;
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+</style>
 {% endblock %}

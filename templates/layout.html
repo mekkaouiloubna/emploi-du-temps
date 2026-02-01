@@ -60,10 +60,25 @@
                         </ul>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.list_users') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users me-1"></i> Gérer Utilisateurs
                         </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_users') }}">
+                                <i class="fas fa-list me-2"></i>Tous les utilisateurs
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_users', user_type='admin') }}">
+                                <i class="fas fa-shield-alt me-2 text-danger"></i>Administrateurs
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_users', user_type='teacher') }}">
+                                <i class="fas fa-user-shield me-2 text-warning"></i>Enseignants
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_users', user_type='student') }}">
+                                <i class="fas fa-user me-2 text-success"></i>Étudiants
+                            </a></li>
+                        </ul>
                     </li>
                     
                     <li class="nav-item dropdown">
@@ -204,7 +219,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6 text-md-start">
-                    <p class="mb-0">&copy; 2024 EduFlow - Système de Gestion Universitaire. Tous droits réservés.</p>
+                    <p class="mb-0">&copy; 2026 EduFlow - Système de Gestion Universitaire. Tous droits réservés.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-0 small">

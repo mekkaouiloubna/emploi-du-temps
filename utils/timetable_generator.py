@@ -26,36 +26,64 @@ class TimetableGenerator:
         self.conflicts = []
         self.debug = debug
 
-        # Créneaux horaires standards de la journée universitaire
-        self.slot_starts = [
-            time(8, 0),
-            time(9, 00),
-            time(10, 0),
-            time(11, 00),
-            time(12, 0),
-            time(13, 0),
-            time(14, 0),
-            time(15, 00),
-            time(16, 00),
-            time(17, 00) 
+        # Créneaux horaires structurés (plages fixes pour éviter la fragmentation)
+        # AMÉLIORATION: Horaires organisés en blocs cohérents
+        self.morning_slots = [
+            time(8, 0),   # 8h-9h30
+            time(9, 30),  # 9h30-11h
+            time(10, 0),  # 10h-11h30
+            time(11, 0),  # 11h-12h30
         ]
+        
+        # AMÉLIORATION: Pause déjeuner respectée (12h-14h)
+        # Aucun créneau entre 12h et 14h
+        
+        self.afternoon_slots = [
+            time(14, 0),  # 14h-15h30
+            time(15, 0),  # 15h-16h30
+            time(15, 30), # 15h30-17h
+            time(16, 0),  # 16h-17h30
+        ]
+        
+        # Combinaison des créneaux matin et après-midi
+        self.slot_starts = self.morning_slots + self.afternoon_slots
         
         # Jours de la semaine : 0=Lundi à 5=Samedi
         self.days = [0, 1, 2, 3, 4, 5]
+        
+        # AMÉLIORATION: Limites de temps pour la pause déjeuner
+        self.lunch_break_start = time(12, 0)
+        self.lunch_break_end = time(14, 0)
 
     def generate(self):
         """
         Boucle principale de génération des emplois du temps.
         Parcourt les groupes et les cours pour assigner des créneaux valides.
         """
-        # 1. Récupération des groupes cibles
+        # 1. Récupération des groupes cibles avec filtrage par semestre
         if self.group_id and self.group_id != 0:
+            # Si un groupe spécifique est sélectionné, on le récupère directement
             groups = Group.query.filter_by(id=self.group_id).all()
         else:
-            groups = Group.query.filter_by(department_id=self.department_id).all()
+            # Sinon, on récupère tous les groupes du département ET du semestre spécifié
+            # CRITIQUE: Filtrage par semestre pour éviter la surcharge d'heures
+            groups = Group.query.filter_by(
+                department_id=self.department_id,
+                semester=self.semester
+            ).all()
         
         if not groups:
-            return {"error": "Aucun groupe trouvé"}
+            return {
+                "error": f"Aucun groupe trouvé pour le département {self.department_id} et le semestre {self.semester}",
+                "generated": 0,
+                "failed": 0,
+                "timeslots": [],
+                "conflicts": [{
+                    "course": "N/A",
+                    "group": "N/A",
+                    "reason": f"Aucun groupe n'existe pour le semestre {self.semester} dans ce département. Veuillez d'abord créer des groupes pour ce semestre."
+                }]
+            }
 
         # 2. Récupération de toutes les salles (Optimisation pour éviter les requêtes répétées)
         all_rooms = Room.query.all()
@@ -79,14 +107,17 @@ class TimetableGenerator:
                     scheduled = False
                     
                     # Filtrage des salles adéquates (Labo vs Salle normale)
+                    # AMÉLIORATION: Ajouter vérification de capacité
                     suitable_rooms = [
                         r for r in all_rooms 
                         if (r.room_type == 'Lab') == course.requires_lab
+                        and self.check_room_capacity(r, group)
                     ]
                     
-                    # Mélange aléatoire pour éviter le déterminisme et répartir l'occupation
-                    random.shuffle(suitable_rooms)
-                    random.shuffle(self.days)
+                    # AMÉLIORATION: Ne plus mélanger aléatoirement pour avoir des horaires cohérents
+                    # Les créneaux sont déjà organisés (matin puis après-midi)
+                    # random.shuffle(suitable_rooms)  # Commenté pour garder l'ordre
+                    # random.shuffle(self.days)  # Commenté pour garder l'ordre des jours
                     
                     # Vérification des enseignants assignés
                     available_teachers = course.teachers
@@ -102,19 +133,23 @@ class TimetableGenerator:
                     # Tentative de trouver un créneau valide
                     for day in self.days:
                         if scheduled: break
-                        
-                        # Mélange des horaires de début pour varier les emplois du temps
-                        current_starts = self.slot_starts[:]
-                        random.shuffle(current_starts)
 
-                        for start_time in current_starts:
+                        for start_time in self.slot_starts:  # AMÉLIORATION: Utiliser l'ordre structuré
                             if scheduled: break
                             
                             # Calcul de l'heure de fin
                             end_time = self.add_minutes(start_time, duration_min)
                             
-                            # Validation de l'heure de fin (Ne doit pas dépasser 17h00)
-                            if end_time > time(17, 0):
+                            # Validation de l'heure de fin (Ne doit pas dépasser 18h00)
+                            if end_time > time(18, 0):
+                                continue
+                            
+                            # AMÉLIORATION: Vérification de la pause déjeuner
+                            if not self.check_lunch_break(start_time, end_time):
+                                continue
+                            
+                            # AMÉLIORATION: Vérification des cours consécutifs
+                            if not self.check_consecutive_courses(group.id, day, start_time, end_time):
                                 continue
 
                             # 1. Vérification de la disponibilité du Groupe
@@ -263,6 +298,93 @@ class TimetableGenerator:
                     return True
         
         return False
+
+    def check_lunch_break(self, start_time, end_time):
+        """
+        AMÉLIORATION: Vérifie que le créneau ne chevauche pas la pause déjeuner (12h-14h).
+        Retourne True si le créneau est valide (ne chevauche pas), False sinon.
+        """
+        # Le créneau est invalide s'il chevauche la pause déjeuner
+        if self.is_overlap(start_time, end_time, self.lunch_break_start, self.lunch_break_end):
+            return False
+        return True
+
+    def check_room_capacity(self, room, group):
+        """
+        AMÉLIORATION: Vérifie que la capacité de la salle est suffisante pour le groupe.
+        Retourne True si la salle peut accueillir le groupe, False sinon.
+        """
+        if not group:
+            return True  # Pas de groupe spécifique, pas de contrainte
+        
+        # Vérifier la capacité du groupe
+        group_size = group.capacity if hasattr(group, 'capacity') and group.capacity else 30
+        
+        # La salle doit avoir au moins la capacité du groupe
+        if room.capacity >= group_size:
+            return True
+        
+        return False
+
+    def check_consecutive_courses(self, group_id, day, start_time, end_time):
+        """
+        AMÉLIORATION: Vérifie qu'un groupe n'a pas trop de cours consécutifs.
+        Maximum 3 heures de cours d'affilée (180 minutes).
+        Retourne True si le créneau respecte la limite, False sinon.
+        """
+        # Récupérer tous les créneaux du groupe pour ce jour
+        existing_slots = [slot for slot in self.generated_slots 
+                         if slot.group_id == group_id and slot.day_of_week == day]
+        
+        # Ajouter les créneaux de la base de données
+        db_slots = TimeSlot.query.filter_by(group_id=group_id, day_of_week=day).all()
+        existing_slots.extend(db_slots)
+        
+        if not existing_slots:
+            return True  # Pas de cours existants, OK
+        
+        # Calculer la durée totale des cours consécutifs incluant le nouveau créneau
+        # Trier les créneaux par heure de début
+        all_slots = existing_slots + [type('obj', (object,), {
+            'start_time': start_time, 
+            'end_time': end_time
+        })]
+        
+        all_slots.sort(key=lambda x: x.start_time)
+        
+        # Vérifier les blocs consécutifs
+        consecutive_minutes = 0
+        last_end = None
+        
+        for slot in all_slots:
+            if last_end is None:
+                # Premier créneau du bloc
+                duration = (datetime.combine(date.min, slot.end_time) - 
+                           datetime.combine(date.min, slot.start_time)).total_seconds() / 60
+                consecutive_minutes = duration
+                last_end = slot.end_time
+            else:
+                # Vérifier si ce créneau est consécutif au précédent (max 15 min d'écart)
+                gap = (datetime.combine(date.min, slot.start_time) - 
+                      datetime.combine(date.min, last_end)).total_seconds() / 60
+                
+                if gap <= 15:  # Considéré comme consécutif si écart <= 15 min
+                    duration = (datetime.combine(date.min, slot.end_time) - 
+                               datetime.combine(date.min, slot.start_time)).total_seconds() / 60
+                    consecutive_minutes += duration
+                    last_end = slot.end_time
+                    
+                    # Vérifier la limite de 180 minutes (3 heures)
+                    if consecutive_minutes > 180:
+                        return False
+                else:
+                    # Nouveau bloc, réinitialiser
+                    duration = (datetime.combine(date.min, slot.end_time) - 
+                               datetime.combine(date.min, slot.start_time)).total_seconds() / 60
+                    consecutive_minutes = duration
+                    last_end = slot.end_time
+        
+        return True
 
     def save_timetable(self, db):
         """

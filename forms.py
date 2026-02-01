@@ -148,7 +148,12 @@ class GenerateTimetableForm(FlaskForm):
     """Formulaire de génération d'emploi du temps"""
     department_id = SelectField('Département (Filière)', coerce=int, validators=[DataRequired()])
     group_id = SelectField('Groupe', coerce=int, choices=[(0, 'Tous les groupes')], validators=[Optional()])
-    semester = SelectField('Semestre', coerce=int, choices=[(1, 'Semestre 1'), (2, 'Semestre 2')], default=1)
+    semester = SelectField('Semestre', coerce=int, choices=[
+        (1, 'Semestre 1'), 
+        (2, 'Semestre 2'),
+        (3, 'Semestre 3'),
+        (4, 'Semestre 4')
+    ], default=1)
     submit = SubmitField("Générer l'emploi du temps")
     
     def __init__(self, *args, **kwargs):

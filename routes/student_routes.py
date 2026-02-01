@@ -151,13 +151,89 @@ def export_timetable_excel():
 @role_required(Student)
 def available_rooms():
     """
-    Recherche des salles disponibles.
+    Recherche des salles disponibles avec filtrage avancé.
     Permet aux étudiants de trouver une salle libre pour étudier.
     """
-    # Récupération de toutes les salles marquées comme disponibles
-    rooms = Room.query.filter_by(is_available=True).all()
+    # Récupération des paramètres de filtrage
+    room_type_filter = request.args.get('room_type', 'all')
+    building_filter = request.args.get('building', 'all')
+    min_capacity = request.args.get('min_capacity', type=int) or None
+    search_query = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'name')
+    sort_order = request.args.get('sort_order', 'asc')
     
-    return render_template('student/available_rooms.html', rooms=rooms)
+    # Construction de la requête de base (salles disponibles uniquement)
+    query = Room.query.filter_by(is_available=True)
+    
+    # Filtre par type de salle
+    if room_type_filter != 'all':
+        query = query.filter(Room.room_type == room_type_filter)
+    
+    # Filtre par bâtiment
+    if building_filter != 'all':
+        query = query.filter(Room.building == building_filter)
+    
+    # Filtre par capacité minimale
+    if min_capacity:
+        query = query.filter(Room.capacity >= min_capacity)
+    
+    # Recherche textuelle (nom ou code)
+    if search_query:
+        search_pattern = f'%{search_query}%'
+        query = query.filter(
+            db.or_(
+                Room.name.ilike(search_pattern),
+                Room.code.ilike(search_pattern)
+            )
+        )
+    
+    # Tri dynamique
+    if sort_by == 'capacity':
+        sort_column = Room.capacity
+    elif sort_by == 'building':
+        sort_column = Room.building
+    elif sort_by == 'type':
+        sort_column = Room.room_type
+    else:  # 'name' par défaut
+        sort_column = Room.name
+    
+    if sort_order == 'desc':
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+    
+    rooms = query.all()
+    
+    # Récupération des valeurs uniques pour les filtres
+    all_buildings = db.session.query(Room.building).distinct().filter(
+        Room.building.isnot(None),
+        Room.is_available == True
+    ).all()
+    buildings = [b[0] for b in all_buildings]
+    
+    all_room_types = db.session.query(Room.room_type).distinct().filter(
+        Room.room_type.isnot(None),
+        Room.is_available == True
+    ).all()
+    room_types = [rt[0] for rt in all_room_types]
+    
+    # Statistiques
+    stats = {
+        'total': len(rooms),
+        'total_available': Room.query.filter_by(is_available=True).count()
+    }
+    
+    return render_template('student/available_rooms.html', 
+                         rooms=rooms,
+                         current_type_filter=room_type_filter,
+                         current_building_filter=building_filter,
+                         current_min_capacity=min_capacity,
+                         current_search=search_query,
+                         current_sort_by=sort_by,
+                         current_sort_order=sort_order,
+                         buildings=buildings,
+                         room_types=room_types,
+                         stats=stats)
 
 @student_bp.route('/notifications')
 @login_required

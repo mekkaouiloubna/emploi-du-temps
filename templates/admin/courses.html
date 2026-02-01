@@ -18,6 +18,48 @@
     <!-- Courses Table -->
     <div class="card shadow-sm">
         <div class="card-body">
+            <!-- Filter Section -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="courseTypeFilter" class="form-label fw-semibold">
+                        <i class="fas fa-filter me-1"></i>Type de cours
+                    </label>
+                    <select class="form-select" id="courseTypeFilter" onchange="applyFilters()">
+                        <option value="all" {% if current_type_filter == 'all' %}selected{% endif %}>Tous les types</option>
+                        <option value="CM" {% if current_type_filter == 'CM' %}selected{% endif %}>CM - Cours Magistral</option>
+                        <option value="TD" {% if current_type_filter == 'TD' %}selected{% endif %}>TD - Travaux Dirigés</option>
+                        <option value="TP" {% if current_type_filter == 'TP' %}selected{% endif %}>TP - Travaux Pratiques</option>
+                        <option value="Exam" {% if current_type_filter == 'Exam' %}selected{% endif %}>Examen</option>
+                        <option value="Autre" {% if current_type_filter == 'Autre' %}selected{% endif %}>Autre</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="searchInput" class="form-label fw-semibold">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Nom ou code du cours..." value="{{ current_search }}" onkeyup="handleSearchKeyup(event)">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-1"></i>Réinitialiser
+                    </button>
+                </div>
+            </div>
+            
+            {% if current_type_filter != 'all' or current_search %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Filtres actifs:</strong>
+                {% if current_type_filter != 'all' %}
+                    Type = <span class="badge bg-primary">{{ current_type_filter }}</span>
+                {% endif %}
+                {% if current_search %}
+                    Recherche = <span class="badge bg-primary">{{ current_search }}</span>
+                {% endif %}
+                <button type="button" class="btn-close" onclick="clearFilters()"></button>
+            </div>
+            {% endif %}
+            
             {% if courses.items %}
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -63,6 +105,13 @@
                     </table>
                 </div>
                 
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Affichage de <strong>{{ courses.items|length }}</strong> cours sur cette page
+                    </div>
+                </div>
+                
                 <!-- Pagination -->
                 {% if courses.pages > 1 %}
                     <nav>
@@ -96,10 +145,59 @@
                     </nav>
                 {% endif %}
             {% else %}
-                <p class="text-muted text-center py-4">Aucun cours trouvé. Créez-en un pour commencer !</p>
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-book fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">Aucun cours trouvé</h5>
+                    <p class="text-muted">
+                        {% if current_type_filter != 'all' or current_search %}
+                            Aucun cours ne correspond aux critères de filtrage.
+                        {% else %}
+                            Créez-en un pour commencer !
+                        {% endif %}
+                    </p>
+                    {% if current_type_filter != 'all' or current_search %}
+                        <button class="btn btn-outline-primary" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Réinitialiser les filtres
+                        </button>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
     </div>
+    
+    <script>
+        function applyFilters() {
+            const courseType = document.getElementById('courseTypeFilter').value;
+            const search = document.getElementById('searchInput').value;
+            const currentUrl = new URL(window.location.href);
+            
+            currentUrl.searchParams.set('course_type', courseType);
+            if (search) {
+                currentUrl.searchParams.set('search', search);
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            currentUrl.searchParams.delete('page'); // Reset to page 1
+            
+            window.location.href = currentUrl.toString();
+        }
+        
+        function handleSearchKeyup(event) {
+            if (event.key === 'Enter') {
+                applyFilters();
+            }
+        }
+        
+        function clearFilters() {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('course_type');
+            currentUrl.searchParams.delete('search');
+            currentUrl.searchParams.delete('page');
+            window.location.href = currentUrl.toString();
+        }
+    </script>
     
     <!-- Add Course Modal -->
     <div class="modal fade" id="addCourseModal" tabindex="-1">
